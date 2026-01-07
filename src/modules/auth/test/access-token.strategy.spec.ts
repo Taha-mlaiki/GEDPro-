@@ -2,6 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AccessTokenStrategy } from '../strategies/acccessToken.strategy';
 import { UserService } from '../../users/users.service';
 
+jest.mock('../../../config/config', () => ({
+  config: {
+    JWT_ACCESS_SECRET: 'test-secret-key',
+  },
+}));
+
 describe('AccessTokenStrategy', () => {
   let strategy: AccessTokenStrategy;
   let userService: jest.Mocked<UserService>;

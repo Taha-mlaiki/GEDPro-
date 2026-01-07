@@ -3,6 +3,12 @@ import { RefreshTokenStrategy } from '../strategies/refreshToken.strategy';
 import { AuthService } from '../auth.service';
 import { Request } from 'express';
 
+jest.mock('../../../config/config', () => ({
+  config: {
+    JWT_REFRESH_TOKEN: 'test-refresh-secret',
+  },
+}));
+
 describe('RefreshTokenStrategy', () => {
   let strategy: RefreshTokenStrategy;
   let authService: jest.Mocked<AuthService>;

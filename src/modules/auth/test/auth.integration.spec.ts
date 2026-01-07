@@ -5,6 +5,12 @@ import { UserService } from '../../users/users.service';
 import { AccessTokenStrategy } from '../strategies/acccessToken.strategy';
 import bcrypt from 'bcrypt';
 
+jest.mock('../../../config/config', () => ({
+  config: {
+    JWT_ACCESS_SECRET: 'test-secret-key',
+  },
+}));
+
 /**
  * Integration Tests for Auth Module
  *
