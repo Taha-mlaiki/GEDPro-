@@ -1,0 +1,91 @@
+version: '3.9'
+
+services:
+  # =============================================================================
+  # PostgreSQL 15 - Relational Data (Tenants, Users, Candidates, Workflows)
+  # =============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: gedpro_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USERNAME:-gedpro}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-gedpro_secret}
+      POSTGRES_DB: ${PG_DATABASE:-gedpro_db}
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USERNAME:-gedpro} -d ${PG_DATABASE:-gedpro_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gedpro_network
+
+  # =============================================================================
+  # MongoDB Latest - Flexible Data (Dynamic Forms, OCR Metadata, Submissions)
+  # =============================================================================
+  mongodb:
+    image: mongo:latest
+    container_name: gedpro_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-gedpro}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-gedpro_secret}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-gedpro_forms}
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gedpro_network
+
+  # =============================================================================
+  # MinIO - S3-Compatible Object Storage (Documents, OCR Files)
+  # Port 9000: API | Port 9001: Console
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: gedpro_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-gedpro_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-gedpro_minio_secret}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"      # S3 API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"  # Web Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gedpro_network
+
+# =============================================================================
+# Volumes - Persistent Data Storage
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  minio_data:
+    driver: local
+
+# =============================================================================
+# Networks - Isolated Network for Services
+# =============================================================================
+networks:
+  gedpro_network:
+    driver: bridge

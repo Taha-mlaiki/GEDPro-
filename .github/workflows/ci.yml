@@ -1,0 +1,45 @@
+# 1. The name of the workflow as it appears in the GitHub "Actions" tab.
+name: NestJS CI/CD
+
+# 2. "on" defines the TRIGGER. When should this recipe run?
+on:
+  push:
+    branches: [ main ]         # Run whenever code is pushed to the 'main' branch.
+  pull_request:
+    branches: [ main ]         # Run whenever someone opens a PR targeting 'main'.
+
+# 3. A workflow is made of "jobs". Jobs usually run in parallel.
+jobs:
+  build-and-test:
+    # 4. Tells GitHub to spin up a fresh Virtual Machine (VM) running Ubuntu.
+    runs-on: ubuntu-latest
+    
+    # 5. The "steps" are the sequence of commands executed inside that VM.
+    steps:
+      # 6. This "Action" clones your repository into the VM so the runner can see your code.
+      - uses: actions/checkout@v4
+      
+      # 7. This installs Node.js in the VM. 
+      # "cache: 'npm'" remembers your node_modules to make future runs faster.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 8. "npm ci" stands for "Clean Install". 
+      # It's faster than "npm install" and strictly follows your package-lock.json.
+      - name: Install Dependencies
+        run: npm ci
+
+      # 9. Runs your ESLint/Prettier checks. (Defined in your NestJS package.json)
+      - name: Run Lint
+        run: npm run lint
+
+      # 10. Runs your Jest tests. If a test fails, this step exits with an error.
+      - name: Run Tests
+        run: npm run test
+
+      # 11. Compiles TypeScript into JavaScript (the 'dist' folder).
+      - name: Build
+        run: npm run build
